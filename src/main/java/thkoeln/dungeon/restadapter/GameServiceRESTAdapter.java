@@ -74,7 +74,7 @@ public class GameServiceRESTAdapter {
                     "Unexpected error converting playerRegistryDto to JSON: " + playerRegistryDto );
         }
         catch ( HttpClientErrorException e ) {
-            if (e.getStatusCode().equals(HttpStatus.NOT_ACCEPTABLE)) {
+            if (e.getStatusCode().equals(HttpStatus.FORBIDDEN)) {
                 // this is a business logic problem - so let the application service handle this
                 throw new RESTRequestDeniedException("Player " + playerRegistryDto + " already registered");
             }
