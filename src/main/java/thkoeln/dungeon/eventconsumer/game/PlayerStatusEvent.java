@@ -18,18 +18,6 @@ import java.util.UUID;
 public class PlayerStatusEvent extends AbstractEvent {
     private UUID playerId;
 
-    public PlayerStatusEvent( String eventIdStr, String timestampStr, String transactionIdStr, String payloadString ) {
-        super(  eventIdStr, timestampStr, transactionIdStr );
-        try {
-            PlayerStatusEventPayloadDto payload = PlayerStatusEventPayloadDto.fromJsonString( payloadString );
-            setPlayerId( payload.getPlayerId() );
-        }
-        catch(JsonProcessingException conversionFailed ) {
-            logger.error( "Error converting payload for event: " + payloadString );
-        }
-    }
-
-
     public boolean isValid() {
         return ( playerId != null );
     }

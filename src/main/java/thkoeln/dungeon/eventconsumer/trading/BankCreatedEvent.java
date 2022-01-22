@@ -1,12 +1,10 @@
-package thkoeln.dungeon.eventconsumer.game;
+package thkoeln.dungeon.eventconsumer.trading;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import thkoeln.dungeon.eventconsumer.core.AbstractEvent;
-import thkoeln.dungeon.game.domain.GameStatus;
 
 import javax.persistence.Entity;
 import java.util.UUID;
@@ -15,11 +13,10 @@ import java.util.UUID;
 @Getter
 @Setter
 @NoArgsConstructor ( access = AccessLevel.PROTECTED )
-public class GameStatusEvent extends AbstractEvent {
-    private UUID gameId;
-    private GameStatus status;
+public class BankCreatedEvent extends AbstractEvent {
+    private UUID playerId;
 
     public boolean isValid() {
-        return ( gameId != null && status != null );
+        return ( playerId != null );
     }
 }

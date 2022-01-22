@@ -1,33 +1,32 @@
 package thkoeln.dungeon.eventconsumer.game;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.messaging.MessageHeaders;
 import org.springframework.test.context.junit4.SpringRunner;
 import thkoeln.dungeon.DungeonPlayerConfiguration;
+import thkoeln.dungeon.core.AbstractRESTEndpointMockingTest;
 import thkoeln.dungeon.game.application.GameApplicationService;
 import thkoeln.dungeon.game.domain.GameRepository;
-import thkoeln.dungeon.core.AbstractRESTEndpointMockingTest;
+import thkoeln.dungeon.game.domain.GameStatus;
 import thkoeln.dungeon.player.application.PlayerApplicationService;
 import thkoeln.dungeon.player.domain.Player;
 import thkoeln.dungeon.player.domain.PlayerRepository;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
-import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.springframework.messaging.MessageHeaders.ID;
-import static org.springframework.messaging.MessageHeaders.TIMESTAMP;
-import static thkoeln.dungeon.eventconsumer.core.AbstractEvent.TRANSACTION_ID_KEY;
-import static thkoeln.dungeon.game.domain.GameStatus.*;
+import static thkoeln.dungeon.game.domain.GameStatus.CREATED;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest( classes = DungeonPlayerConfiguration.class )
@@ -47,9 +46,19 @@ public class GameServiceStatusChangedEventTest extends AbstractRESTEndpointMocki
     private UUID bearerToken = UUID.randomUUID();
     private UUID gameId = UUID.randomUUID();
     private UUID transactionId = UUID.randomUUID();
-    private GameStatusEventPayloadDto createdEventPayload;
     private String eventPayloadString;
     private ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
+
+    @Setter
+    @Getter
+    @AllArgsConstructor
+    private class TestPayloadDto {
+        @JsonProperty("gameId")
+        private UUID gameId;
+        @JsonProperty("status")
+        private GameStatus status;
+    }
+    private TestPayloadDto createdEventPayload;
 
     @Before
     public void setUp() throws Exception {
@@ -65,7 +74,7 @@ public class GameServiceStatusChangedEventTest extends AbstractRESTEndpointMocki
             assertNotNull( player.getBearerToken() );
             playerRepository.save( player );
         }
-        createdEventPayload = new GameStatusEventPayloadDto( gameId, CREATED );
+        createdEventPayload = new TestPayloadDto( gameId, CREATED );
     }
 
     @Test

@@ -1,23 +1,15 @@
 package thkoeln.dungeon.eventconsumer.game;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.producer.Producer;
-import org.apache.kafka.clients.producer.ProducerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.handler.annotation.Header;
-import org.springframework.messaging.handler.annotation.Headers;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
 import thkoeln.dungeon.game.application.GameApplicationService;
 import thkoeln.dungeon.player.application.PlayerApplicationService;
-
-import java.util.UUID;
 
 @Service
 public class GameEventConsumerService {
@@ -47,11 +39,12 @@ public class GameEventConsumerService {
     @KafkaListener( topics = "status" )
     public void consumeGameStatusEvent( @Header String eventId, @Header String timestamp, @Header String transactionId,
                                         @Payload String payload ) {
-        GameStatusEvent gameStatusEvent = new GameStatusEvent( eventId, timestamp, transactionId, payload );
-        // saving the event is not really mandatory, just to keep track / "just in case"
+        GameStatusEvent gameStatusEvent = new GameStatusEvent()
+                .fillWithPayload( payload )
+                .fillHeader( eventId, timestamp, transactionId );
         gameStatusEventRepository.save( gameStatusEvent );
         if ( gameStatusEvent.isValid() ) {
-            switch ( gameStatusEvent.getGameStatus() ) {
+            switch ( gameStatusEvent.getStatus() ) {
                 case CREATED:
                     playerApplicationService.joinPlayersInNewlyCreatedGame( gameStatusEvent.getGameId() );
                     break;
@@ -75,8 +68,9 @@ public class GameEventConsumerService {
     @KafkaListener( topics = "playerStatus" )
     public void consumePlayerStatusEvent( @Header String eventId, @Header String timestamp, @Header String transactionId,
                                           @Payload String payload ) {
-        PlayerStatusEvent playerStatusEvent = new PlayerStatusEvent( eventId, timestamp, transactionId, payload );
-        // saving the event is not really mandatory, just to keep track / "just in case"
+        PlayerStatusEvent playerStatusEvent = new PlayerStatusEvent()
+                .fillWithPayload( payload )
+                .fillHeader( eventId, timestamp, transactionId );
         playerStatusEventRepository.save( playerStatusEvent );
         if ( playerStatusEvent.isValid() ) {
             playerApplicationService.assignPlayerId(
