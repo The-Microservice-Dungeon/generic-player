@@ -50,7 +50,7 @@ public class Planet {
      * @param otherPlanet
      * @param direction
      */
-    public void defineNeighbour(Planet otherPlanet, CompassDirection direction ) {
+    public void defineNeighbour( Planet otherPlanet, CompassDirection direction ) {
         if ( otherPlanet == null ) throw new PlanetException( "Cannot establish neighbouring relationship with null planet!" ) ;
         try {
             Method otherGetter = neighbouringGetter( direction.getOppositeDirection() );

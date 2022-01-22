@@ -11,8 +11,7 @@ import thkoeln.dungeon.game.domain.GameRepository;
 import thkoeln.dungeon.game.domain.GameStatus;
 import thkoeln.dungeon.restadapter.GameDto;
 import thkoeln.dungeon.restadapter.GameServiceRESTAdapter;
-import thkoeln.dungeon.restadapter.exceptions.RESTConnectionFailureException;
-import thkoeln.dungeon.restadapter.exceptions.UnexpectedRESTException;
+import thkoeln.dungeon.restadapter.RESTAdapterException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -74,6 +73,7 @@ public class GameApplicationService {
         gameRepository.save( game );
         return game;
     }
+
 
 
 
@@ -155,7 +155,7 @@ public class GameApplicationService {
         try {
             gameDtos = gameServiceRESTAdapter.fetchCurrentGameState();
         }
-        catch ( UnexpectedRESTException | RESTConnectionFailureException e ) {
+        catch ( RESTAdapterException e ) {
             logger.warn( "Problems with GameService while synchronizing game state - need to try again later.\n" +
                     e.getStackTrace() );
         }

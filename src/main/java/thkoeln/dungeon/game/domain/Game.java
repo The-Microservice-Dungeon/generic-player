@@ -1,10 +1,11 @@
 package thkoeln.dungeon.game.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import thkoeln.dungeon.game.application.GameApplicationService;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -17,7 +18,6 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-@ToString
 public class Game {
     @Id
     private final UUID id = UUID.randomUUID();

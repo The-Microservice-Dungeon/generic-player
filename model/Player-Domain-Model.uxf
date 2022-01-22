@@ -4,10 +4,10 @@
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>999</x>
-      <y>171</y>
+      <x>684</x>
+      <y>144</y>
       <w>180</w>
-      <h>99</h>
+      <h>108</h>
     </coordinates>
     <panel_attributes>Game
 bg=#00ff00
@@ -15,14 +15,15 @@ bg=#00ff00
 id: UUID
 gameId: UUID
 gameStatus: GameStatus
-currentRoundCount: Int</panel_attributes>
+currentRoundCount: Int
+money: Integer</panel_attributes>
     <additional_attributes/>
   </element>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>414</x>
-      <y>162</y>
+      <x>342</x>
+      <y>135</y>
       <w>180</w>
       <h>108</h>
     </coordinates>
@@ -38,8 +39,8 @@ email: String</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>720</x>
-      <y>351</y>
+      <x>360</x>
+      <y>333</y>
       <w>144</w>
       <h>54</h>
     </coordinates>
@@ -52,51 +53,24 @@ id: UUID
     <additional_attributes/>
   </element>
   <element>
-    <id>UMLClass</id>
+    <id>Relation</id>
     <coordinates>
-      <x>711</x>
+      <x>513</x>
       <y>171</y>
-      <w>180</w>
-      <h>72</h>
-    </coordinates>
-    <panel_attributes>GameParticipation
-bg=#ff0000
---
-id: UUID
-money: Integer</panel_attributes>
-    <additional_attributes/>
-  </element>
-  <element>
-    <id>Relation</id>
-    <coordinates>
-      <x>585</x>
-      <y>189</y>
-      <w>144</w>
-      <h>36</h>
+      <w>189</w>
+      <h>45</h>
     </coordinates>
     <panel_attributes>lt=&lt;-
-m1=1
-m2=*</panel_attributes>
-    <additional_attributes>10.0;10.0;140.0;10.0</additional_attributes>
-  </element>
-  <element>
-    <id>Relation</id>
-    <coordinates>
-      <x>882</x>
-      <y>189</y>
-      <w>135</w>
-      <h>36</h>
-    </coordinates>
-    <panel_attributes>lt=&lt;-
-m1=1
-m2=*</panel_attributes>
-    <additional_attributes>130.0;10.0;10.0;10.0</additional_attributes>
+m1=currentGame  0..1  
+m2=*
+</panel_attributes>
+    <additional_attributes>190.0;20.0;10.0;20.0</additional_attributes>
   </element>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>999</x>
-      <y>351</y>
+      <x>675</x>
+      <y>333</y>
       <w>180</w>
       <h>63</h>
     </coordinates>
@@ -111,8 +85,8 @@ name: String
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>954</x>
-      <y>405</y>
+      <x>630</x>
+      <y>387</y>
       <w>333</w>
       <h>126</h>
     </coordinates>
@@ -129,8 +103,8 @@ north- | east- | south- | westNeighbour
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>243</x>
-      <y>216</y>
+      <x>90</x>
+      <y>189</y>
       <w>90</w>
       <h>27</h>
     </coordinates>
@@ -144,8 +118,8 @@ layer=10
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>234</x>
-      <y>162</y>
+      <x>81</x>
+      <y>135</y>
       <w>108</w>
       <h>198</h>
     </coordinates>
@@ -158,8 +132,8 @@ Aggregates</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>243</x>
-      <y>252</y>
+      <x>90</x>
+      <y>225</y>
       <w>90</w>
       <h>27</h>
     </coordinates>
@@ -172,8 +146,8 @@ layer=10
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>243</x>
-      <y>288</y>
+      <x>90</x>
+      <y>261</y>
       <w>90</w>
       <h>27</h>
     </coordinates>
@@ -186,8 +160,8 @@ layer=10
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>243</x>
-      <y>324</y>
+      <x>90</x>
+      <y>297</y>
       <w>90</w>
       <h>27</h>
     </coordinates>

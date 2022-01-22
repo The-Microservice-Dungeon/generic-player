@@ -4,24 +4,36 @@ package thkoeln.dungeon.player.domain;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import thkoeln.dungeon.game.domain.Game;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import javax.persistence.ManyToOne;
 import java.util.Objects;
 import java.util.UUID;
 
 @Entity
-@Setter
 @Getter
 @NoArgsConstructor
 public class Player {
     @Id
     private final UUID id = UUID.randomUUID();
 
+    @Setter
     private String name;
+    @Setter
     private String email;
+    @Setter
     private UUID bearerToken;
+    @Setter
     private UUID playerId;
+    @Setter
+    private Integer money = 0;
+
+    private UUID registrationTransactionId;
+
+    @ManyToOne
+    private Game currentGame;
 
     /**
      * Choose a random and unique name and email for the player
@@ -36,6 +48,12 @@ public class Player {
         return ( bearerToken != null && playerId != null );
     }
 
+    public void registerFor ( Game game, UUID registrationTransactionId ) {
+        if ( game == null ) throw new PlayerDomainException( "Game must not be null!" );
+        if ( registrationTransactionId == null ) throw new PlayerDomainException( "registrationTransactionId must not be null!" );
+        this.currentGame = game;
+        this.registrationTransactionId = registrationTransactionId;
+    }
 
     public void playRound() {
         // todo

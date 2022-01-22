@@ -7,12 +7,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.*;
-import thkoeln.dungeon.restadapter.exceptions.RESTConnectionFailureException;
-import thkoeln.dungeon.restadapter.exceptions.RESTRequestDeniedException;
-import thkoeln.dungeon.restadapter.exceptions.UnexpectedRESTException;
+import thkoeln.dungeon.DungeonPlayerRuntimeException;
 
 import java.util.Arrays;
 import java.util.Iterator;
@@ -32,32 +33,30 @@ public class GameServiceRESTAdapter {
     private ObjectMapper objectMapper = new ObjectMapper();
 
     @Autowired
-    public GameServiceRESTAdapter(RestTemplate restTemplate ) {
+    public GameServiceRESTAdapter( RestTemplate restTemplate ) {
         this.restTemplate = restTemplate;
     }
 
 
-    public GameDto[] fetchCurrentGameState()
-            throws UnexpectedRESTException, RESTConnectionFailureException {
+    public GameDto[] fetchCurrentGameState() {
         GameDto[] gameDtos = new GameDto[0];
         String urlString = gameServiceUrlString + "/games";
         try {
             gameDtos = restTemplate.getForObject( urlString, GameDto[].class );
-            if ( gameDtos == null ) throw new UnexpectedRESTException( "Received a null GameDto array - wtf ...?" );
+            if ( gameDtos == null ) throw new RESTAdapterException( urlString, "Received a null GameDto array - wtf ...?", null );
             logger.info( "Got " + gameDtos.length + " game(s) via REST ...");
             Iterator<GameDto> iterator = Arrays.stream(gameDtos).iterator();
             while ( iterator.hasNext() ) { logger.info( "... " + iterator.next() ); }
         }
         catch ( RestClientException e ) {
-            throw new RESTConnectionFailureException( urlString, e.getMessage() );
+            throw new RESTAdapterException( urlString, e.getMessage(), null );
         }
         return gameDtos;
     }
 
 
 
-    public PlayerRegistryDto getBearerTokenForPlayer( PlayerRegistryDto playerRegistryDto )
-            throws UnexpectedRESTException, RESTConnectionFailureException, RESTRequestDeniedException {
+    public PlayerRegistryDto getBearerTokenForPlayer( PlayerRegistryDto playerRegistryDto ) {
         PlayerRegistryDto returnedPlayerRegistryDto = null;
         String urlString = gameServiceUrlString + "/players";
         try {
@@ -70,20 +69,21 @@ public class GameServiceRESTAdapter {
                      restTemplate.postForObject( urlString, request, PlayerRegistryDto.class);
         }
         catch ( JsonProcessingException e ) {
-            throw new UnexpectedRESTException(
+            throw new DungeonPlayerRuntimeException(
                     "Unexpected error converting playerRegistryDto to JSON: " + playerRegistryDto );
         }
         catch ( HttpClientErrorException e ) {
-            if (e.getStatusCode().equals(HttpStatus.FORBIDDEN)) {
+            if ( e.getStatusCode().equals( HttpStatus.FORBIDDEN ) ) {
                 // this is a business logic problem - so let the application service handle this
-                throw new RESTRequestDeniedException("Player " + playerRegistryDto + " already registered");
+                throw new RESTAdapterException( "Player " + playerRegistryDto + " already registered",
+                        urlString, e.getStatusCode() );
             }
             else {
-                throw new RESTConnectionFailureException( urlString, "Status code " + e.getStatusCode() );
+                throw new RESTAdapterException( urlString, e.getMessage(), e.getStatusCode() );
             }
         }
         catch ( RestClientException e ) {
-            throw new RESTConnectionFailureException( "/players", e.getMessage() );
+            throw new RESTAdapterException( urlString, e.getMessage(), null );
         }
         logger.info( "Registered player via REST, got bearer token: " + returnedPlayerRegistryDto.getBearerToken() );
         return returnedPlayerRegistryDto;
@@ -97,8 +97,7 @@ public class GameServiceRESTAdapter {
      * @param bearerToken of the player
      * @return transactionId if successful
      */
-    public UUID registerPlayerForGame( UUID gameId, UUID bearerToken )
-            throws RESTConnectionFailureException, RESTRequestDeniedException {
+    public UUID registerPlayerForGame( UUID gameId, UUID bearerToken ) {
         String urlString = gameServiceUrlString + "/games/" + gameId + "/players/" + bearerToken;
         try {
             TransactionIdResponseDto transactionIdResponseDto =
@@ -106,22 +105,22 @@ public class GameServiceRESTAdapter {
             return transactionIdResponseDto.getTransactionId();
         }
         catch ( HttpClientErrorException e ) {
-            if ( e.getStatusCode().equals(HttpStatus.NOT_ACCEPTABLE) ) {
+            if ( e.getStatusCode().equals( HttpStatus.NOT_ACCEPTABLE ) ) {
                 // this is a business logic problem - so let the application service handle this
-                throw new RESTRequestDeniedException( "Player with bearer token " + bearerToken +
-                        " already registered in game with id " + gameId );
+                throw new RESTAdapterException( urlString, "Player with bearer token " + bearerToken +
+                        " already registered in game with id " + gameId, e.getStatusCode() );
             }
-            else if ( e.getStatusCode().equals(HttpStatus.BAD_REQUEST ) ) {
-                throw new RESTRequestDeniedException( "For player with bearer token " + bearerToken +
+            else if ( e.getStatusCode().equals( HttpStatus.BAD_REQUEST ) ) {
+                throw new RESTAdapterException( urlString, "For player with bearer token " + bearerToken +
                         " and game with id " + gameId + " the player registration went wrong; original error msg: "
-                        + e.getMessage() );
+                        + e.getMessage(), e.getStatusCode() );
             }
             else {
-                throw new RESTConnectionFailureException( urlString, "Status code " + e.getStatusCode() );
+                throw new RESTAdapterException( urlString, e.getMessage(), e.getStatusCode() );
             }
         }
         catch ( RestClientException e ) {
-            throw new RESTConnectionFailureException( urlString, e.getMessage() );
+            throw new RESTAdapterException( urlString, e.getMessage(), null );
         }
     }
 

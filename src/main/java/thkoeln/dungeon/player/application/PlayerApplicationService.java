@@ -5,15 +5,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import thkoeln.dungeon.game.application.GameApplicationService;
 import thkoeln.dungeon.game.domain.Game;
-import thkoeln.dungeon.player.domain.*;
+import thkoeln.dungeon.game.domain.GameException;
+import thkoeln.dungeon.game.domain.GameRepository;
+import thkoeln.dungeon.player.domain.Player;
+import thkoeln.dungeon.player.domain.PlayerMode;
+import thkoeln.dungeon.player.domain.PlayerRepository;
 import thkoeln.dungeon.restadapter.GameServiceRESTAdapter;
 import thkoeln.dungeon.restadapter.PlayerRegistryDto;
-import thkoeln.dungeon.restadapter.exceptions.RESTConnectionFailureException;
-import thkoeln.dungeon.restadapter.exceptions.RESTRequestDeniedException;
-import thkoeln.dungeon.restadapter.exceptions.UnexpectedRESTException;
+import thkoeln.dungeon.restadapter.RESTAdapterException;
 
 import java.util.List;
 import java.util.Optional;
@@ -33,9 +36,9 @@ public class PlayerApplicationService {
     private ModelMapper modelMapper = new ModelMapper();
 
     private PlayerRepository playerRepository;
-    private GameParticipationRepository gameParticipationRepository;
-    private GameServiceRESTAdapter gameServiceRESTAdapter;
     private GameApplicationService gameApplicationService;
+    private GameRepository gameRepository;
+    private GameServiceRESTAdapter gameServiceRESTAdapter;
 
     @Value("${dungeon.singlePlayer.playerName}")
     private String singlePlayerName;
@@ -52,12 +55,12 @@ public class PlayerApplicationService {
     @Autowired
     public PlayerApplicationService(
             PlayerRepository playerRepository,
-            GameParticipationRepository gameParticipationRepository,
             GameApplicationService gameApplicationService,
+            GameRepository gameRepository,
             GameServiceRESTAdapter gameServiceRESTAdapter ) {
         this.playerRepository = playerRepository;
-        this.gameParticipationRepository = gameParticipationRepository;
         this.gameServiceRESTAdapter = gameServiceRESTAdapter;
+        this.gameRepository = gameRepository;
         this.gameApplicationService = gameApplicationService;
     }
 
@@ -107,7 +110,7 @@ public class PlayerApplicationService {
      * @param player
      * @return true if successful
      */
-    public void obtainBearerTokenForPlayer(Player player ) {
+    public void obtainBearerTokenForPlayer( Player player ) {
         if ( player.getBearerToken() != null ) return;
         try {
             PlayerRegistryDto playerDto = modelMapper.map(player, PlayerRegistryDto.class);
@@ -122,15 +125,16 @@ public class PlayerApplicationService {
                 logger.error( "PlayerRegistryDto returned by REST service is null for player " + player );
             }
         }
-        catch ( RESTRequestDeniedException e ) {
-            // TODO - unclear what to do in this cases
-            logger.error( "Name collision while getting bearer token for player " + player );
-        }
-        catch ( RESTConnectionFailureException | UnexpectedRESTException e ) {
-            logger.error( "No connection or no valid response from GameService - no bearer token for player " + player );
+        catch ( RESTAdapterException e ) {
+            if ( HttpStatus.FORBIDDEN.equals( e.getReturnValue() ) ) {
+                // TODO - unclear what to do in this cases
+                logger.error("Name collision while getting bearer token for player " + player);
+            }
+            else {
+                logger.error( "No connection or no valid response from GameService - no bearer token for player " + player );
+            }
         }
     }
-
 
 
 
@@ -154,22 +158,19 @@ public class PlayerApplicationService {
      * @param game
      */
     public void registerOnePlayerForGame( Player player, Game game ) {
+        if ( player.getBearerToken() == null ) {
+            logger.error( "Player" + player + " has no BearerToken!" );
+            return;
+        }
         try {
-            if (player.getBearerToken() == null) {
-                obtainBearerTokenForPlayer( player );
-            }
-            if (player.getBearerToken() == null) {
-                logger.error("No bearer token for " + player + " also after another attempt - cannot register for game!");
-                return;
-            }
             UUID transactionId = gameServiceRESTAdapter.registerPlayerForGame( game.getGameId(), player.getBearerToken() );
             if ( transactionId != null ) {
-                GameParticipation gameParticipation = new GameParticipation( player, game, transactionId );
-                gameParticipationRepository.save( gameParticipation );
-                logger.info("Player " + player + " successfully registered for game " + game +
+                player.registerFor( game, transactionId );
+                playerRepository.save( player );
+                logger.info( "Player " + player + " successfully registered for game " + game +
                         " with transactionId " + transactionId );
             }
-        } catch (RESTConnectionFailureException | RESTRequestDeniedException e) {
+        } catch ( RESTAdapterException e ) {
             // shouldn't happen - cannot do more than logging and retrying later
             // todo - err msg wrong
             logger.error( "Could not register " + player + " for " + game +
@@ -178,22 +179,25 @@ public class PlayerApplicationService {
     }
 
 
+
+
+
     /**
-     *
+     * Method to be called when the answer event after a game registration has been received
      */
     public void assignPlayerId( UUID registrationTransactionId, UUID playerId ) {
+        logger.info( "Assign playerId from game registration" );
         if ( registrationTransactionId == null )
             throw new PlayerRegistryException( "registrationTransactionId cannot be null!" );
         if ( playerId == null )  throw new PlayerRegistryException( "PlayerId cannot be null!" );
-        List<GameParticipation> foundParticipations =
-                gameParticipationRepository.findByRegistrationTransactionId( registrationTransactionId );
-        if ( foundParticipations.size() != 1 ) {
-            throw new PlayerRegistryException( "Found not 1 participation for playerId " + playerId
-                        + ", but " + foundParticipations.size() );
+        List<Player> foundPlayers =
+                playerRepository.findByRegistrationTransactionId( registrationTransactionId );
+        if ( foundPlayers.size() != 1 ) {
+            throw new PlayerRegistryException( "Found not exactly 1 game for player registration with " + registrationTransactionId
+                    + ", but " + foundPlayers.size() );
         }
-        Player player = foundParticipations.get( 0 ).getPlayer();
+        Player player = foundPlayers.get( 0 );
         player.setPlayerId( playerId );
         playerRepository.save( player );
     }
-
 }
