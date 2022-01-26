@@ -9,7 +9,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.env.Environment;
 import org.springframework.test.context.junit4.SpringRunner;
 import thkoeln.dungeon.DungeonPlayerConfiguration;
-import thkoeln.dungeon.core.AbstractRESTEndpointMockingTest;
+import thkoeln.dungeon.core.AbstractDungeonMockingTest;
 import thkoeln.dungeon.game.domain.Game;
 import thkoeln.dungeon.game.domain.GameRepository;
 import thkoeln.dungeon.player.domain.*;
@@ -22,17 +22,16 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 
 @RunWith(SpringRunner.class)
 @SpringBootTest( classes = DungeonPlayerConfiguration.class )
-public class PlayerGameRegistrationTest extends AbstractRESTEndpointMockingTest {
+public class PlayerGameRegistrationTest extends AbstractDungeonMockingTest {
     private Player player, playerWithoutToken;
     private UUID playerId = UUID.randomUUID();
-    @Autowired
-    private Environment env;
     @Autowired
     private GameRepository gameRepository;
     @Autowired
     private PlayerRepository playerRepository;
     @Autowired
     private PlayerApplicationService playerApplicationService;
+
 
 
     @Before
@@ -64,15 +63,36 @@ public class PlayerGameRegistrationTest extends AbstractRESTEndpointMockingTest 
         mockRegistrationEndpointFor( player, game.getGameId() );
 
         // when
-        playerApplicationService.joinPlayersInNewlyCreatedGame( game.getGameId() );
-        // ... and we assume that the playerStatus event comes after that
-        playerApplicationService.assignPlayerId( transactionId, playerId );
+        playerApplicationService.registerPlayersForNewlyCreatedGame( game.getGameId() );
+
+        // then
+        List<Player> playersForGame = playerRepository.findByCurrentGame( game );
+        assertEquals( 1, playersForGame.size() );
+        assertEquals( player, playersForGame.get( 0 ) );
+        assertEquals( game, playersForGame.get( 0 ).getCurrentGame() );
+        assertEquals( genericTransactionId, playersForGame.get( 0 ).getRegistrationTransactionId() );
+    }
+
+
+
+
+    @Test
+    public void testAssignPlayerId() throws Exception {
+        // given
+        mockBearerTokenEndpointFor( player );
+        playerApplicationService.obtainBearerTokenForPlayer( player );
+        assert ( player.getBearerToken() != null );
+        super.resetMockServer();
+        mockBearerTokenEndpointFor( player );
+        mockRegistrationEndpointFor( player, game.getGameId() );
+        playerApplicationService.registerPlayersForNewlyCreatedGame( game.getGameId() );
+
+        // when
+        playerApplicationService.assignPlayerId(genericTransactionId, playerId );
 
         // then
         List<Player> readyPlayers = playerRepository.findByCurrentGame( game );
         assertEquals( 1, readyPlayers.size() );
-        assertEquals( player, readyPlayers.get( 0 ) );
-        assertEquals( game, readyPlayers.get( 0 ).getCurrentGame() );
         assertTrue( readyPlayers.get( 0 ).isReadyToPlay() );
     }
 

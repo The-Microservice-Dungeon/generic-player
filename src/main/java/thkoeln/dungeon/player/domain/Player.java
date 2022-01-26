@@ -4,11 +4,10 @@ package thkoeln.dungeon.player.domain;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import thkoeln.dungeon.domainprimitives.Moneten;
 import thkoeln.dungeon.game.domain.Game;
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.ManyToOne;
+import javax.persistence.*;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -28,7 +27,8 @@ public class Player {
     @Setter
     private UUID playerId;
     @Setter
-    private Integer money = 0;
+    @Embedded
+    private Moneten moneten = Moneten.fromInteger( 0 );
 
     private UUID registrationTransactionId;
 
@@ -45,7 +45,7 @@ public class Player {
     }
 
     public boolean isReadyToPlay() {
-        return ( bearerToken != null && playerId != null );
+        return ( bearerToken != null && playerId != null && moneten != null );
     }
 
     public void registerFor ( Game game, UUID registrationTransactionId ) {

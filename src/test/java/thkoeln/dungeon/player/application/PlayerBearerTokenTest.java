@@ -1,7 +1,9 @@
 package thkoeln.dungeon.player.application;
 
 
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,7 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.env.Environment;
 import org.springframework.test.context.junit4.SpringRunner;
 import thkoeln.dungeon.DungeonPlayerConfiguration;
-import thkoeln.dungeon.core.AbstractRESTEndpointMockingTest;
+import thkoeln.dungeon.core.AbstractDungeonMockingTest;
 import thkoeln.dungeon.game.domain.Game;
 import thkoeln.dungeon.game.domain.GameRepository;
 import thkoeln.dungeon.player.domain.Player;
@@ -24,23 +26,26 @@ import static thkoeln.dungeon.game.domain.GameStatus.*;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest( classes = DungeonPlayerConfiguration.class )
-public class PlayerBearerTokenTest extends AbstractRESTEndpointMockingTest {
-    static {
-        System.setProperty("dungeon.mode", "MULTI");
-    }
+public class PlayerBearerTokenTest extends AbstractDungeonMockingTest {
+    private static final int NUM_OF_PLAYERS = 30;
     @Autowired
     private Environment env;
-
     @Autowired
     private GameRepository gameRepository;
-
     @Autowired
     private PlayerRepository playerRepository;
-
     @Autowired
     private PlayerApplicationService playerApplicationService;
-
     private Game game;
+
+    @BeforeClass
+    public static void beforeAll() {
+        System.setProperty("dungeon.playerNumber", String.valueOf( NUM_OF_PLAYERS ));
+    }
+    @AfterClass
+    public static void afterAll() {
+        System.setProperty("dungeon.playerNumber", "1");
+    }
 
 
     @Before
@@ -71,7 +76,7 @@ public class PlayerBearerTokenTest extends AbstractRESTEndpointMockingTest {
         List<Player> allPlayers = playerRepository.findAll();
 
         // then
-        assertEquals( Integer.valueOf( env.getProperty("dungeon.multiPlayer.number") ), allPlayers.size() );
+        assertEquals( Integer.valueOf( NUM_OF_PLAYERS ), allPlayers.size() );
         for ( Player player: allPlayers ) {
             assertNotNull( player.getEmail(), "player email" );
             assertNotNull( player.getName(), "player name"  );
@@ -95,7 +100,7 @@ public class PlayerBearerTokenTest extends AbstractRESTEndpointMockingTest {
 
         // then
         allPlayers = playerRepository.findAll();
-        assertEquals( Integer.valueOf( env.getProperty("dungeon.multiPlayer.number") ), allPlayers.size() );
+        assertEquals( Integer.valueOf( NUM_OF_PLAYERS ), allPlayers.size() );
         for ( Player player: allPlayers ) {
             assertNotNull( player.getEmail(), "player email" );
             assertNotNull( player.getName(), "player name"  );
@@ -120,7 +125,7 @@ public class PlayerBearerTokenTest extends AbstractRESTEndpointMockingTest {
 
         // then
         allPlayers = playerRepository.findAll();
-        assertEquals( Integer.valueOf( env.getProperty("dungeon.multiPlayer.number") ), allPlayers.size() );
+        assertEquals( Integer.valueOf( NUM_OF_PLAYERS ), allPlayers.size() );
         for ( Player player: allPlayers ) {
             assertNotNull( player.getEmail(), "player email" );
             assertNotNull( player.getName(), "player name"  );

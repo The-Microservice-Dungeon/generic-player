@@ -15,8 +15,9 @@ import java.util.UUID;
 @NoArgsConstructor ( access = AccessLevel.PROTECTED )
 public class BankCreatedEvent extends AbstractEvent {
     private UUID playerId;
+    private Integer money;
 
     public boolean isValid() {
-        return ( playerId != null );
+        return ( playerId != null && money != null );
     }
 }

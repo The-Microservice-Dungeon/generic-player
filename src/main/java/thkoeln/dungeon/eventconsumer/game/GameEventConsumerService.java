@@ -1,6 +1,5 @@
 package thkoeln.dungeon.eventconsumer.game;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +17,6 @@ public class GameEventConsumerService {
     private PlayerApplicationService playerApplicationService;
     private GameStatusEventRepository gameStatusEventRepository;
     private PlayerStatusEventRepository playerStatusEventRepository;
-    private ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
 
     @Autowired
@@ -46,7 +44,7 @@ public class GameEventConsumerService {
         if ( gameStatusEvent.isValid() ) {
             switch ( gameStatusEvent.getStatus() ) {
                 case CREATED:
-                    playerApplicationService.joinPlayersInNewlyCreatedGame( gameStatusEvent.getGameId() );
+                    playerApplicationService.registerPlayersForNewlyCreatedGame( gameStatusEvent.getGameId() );
                     break;
                 case RUNNING:
                     gameApplicationService.gameExternallyStarted( gameStatusEvent.getGameId() );

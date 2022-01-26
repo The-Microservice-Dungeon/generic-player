@@ -28,10 +28,6 @@ public class GameLifecycleTest {
     private static final UUID GAME_ID_2 = UUID.randomUUID();
     private Game game0, game1, game2;
 
-
-
-    private ObjectMapper mapper = new ObjectMapper();
-
     @Autowired
     private GameRepository gameRepository;
     @Autowired
@@ -42,7 +38,6 @@ public class GameLifecycleTest {
 
     @Before
     public void setUp() throws Exception {
-        playerRepository.deleteAll();
         playerRepository.deleteAll();
         gameRepository.deleteAll();
         game0 = Game.newlyCreatedGame( GAME_ID_0 );

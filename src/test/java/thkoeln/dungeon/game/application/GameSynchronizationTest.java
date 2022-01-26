@@ -74,7 +74,7 @@ public class GameSynchronizationTest {
 
     @Before
     public void setUp() throws Exception {
-        gameRepository.deleteAll();
+        playerRepository.deleteAll();
         gameRepository.deleteAll();
         gamesEndpointURI = new URI( gameServiceURIString + "/games" );
 

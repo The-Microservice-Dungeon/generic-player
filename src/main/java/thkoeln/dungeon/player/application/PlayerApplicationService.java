@@ -5,11 +5,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import thkoeln.dungeon.domainprimitives.Moneten;
 import thkoeln.dungeon.game.application.GameApplicationService;
 import thkoeln.dungeon.game.domain.Game;
-import thkoeln.dungeon.game.domain.GameException;
 import thkoeln.dungeon.game.domain.GameRepository;
 import thkoeln.dungeon.player.domain.Player;
 import thkoeln.dungeon.player.domain.PlayerMode;
@@ -19,7 +20,6 @@ import thkoeln.dungeon.restadapter.PlayerRegistryDto;
 import thkoeln.dungeon.restadapter.RESTAdapterException;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -34,42 +34,36 @@ import java.util.UUID;
 public class PlayerApplicationService {
     private Logger logger = LoggerFactory.getLogger(PlayerApplicationService.class);
     private ModelMapper modelMapper = new ModelMapper();
+    private Environment env;
 
     private PlayerRepository playerRepository;
     private GameApplicationService gameApplicationService;
     private GameRepository gameRepository;
     private GameServiceRESTAdapter gameServiceRESTAdapter;
 
-    @Value("${dungeon.singlePlayer.playerName}")
-    private String singlePlayerName;
+    @Value("${dungeon.playerName}")
+    private String playerName;
 
-    @Value("${dungeon.singlePlayer.playerEmail}")
-    private String singlePlayerEmail;
-
-    @Value("${dungeon.mode}")
-    private PlayerMode playerMode;
-
-    @Value("${dungeon.multiPlayer.number}")
-    private int numberOfMultiPlayers;
+    @Value("${dungeon.playerEmail}")
+    private String playerEmail;
 
     @Autowired
     public PlayerApplicationService(
             PlayerRepository playerRepository,
             GameApplicationService gameApplicationService,
             GameRepository gameRepository,
-            GameServiceRESTAdapter gameServiceRESTAdapter ) {
+            GameServiceRESTAdapter gameServiceRESTAdapter,
+            Environment env ) {
         this.playerRepository = playerRepository;
         this.gameServiceRESTAdapter = gameServiceRESTAdapter;
         this.gameRepository = gameRepository;
         this.gameApplicationService = gameApplicationService;
-    }
-
-    public PlayerMode currentMode() {
-        return playerMode;
+        this.env = env;
     }
 
     public int numberOfPlayers() {
-        return currentMode().isSingle() ? 1 : numberOfMultiPlayers;
+        int numberOfPlayers = Integer.valueOf( env.getProperty( "dungeon.playerNumber" ) );
+        return numberOfPlayers;
     }
 
 
@@ -78,12 +72,13 @@ public class PlayerApplicationService {
      */
     public void createPlayers() {
         List<Player> players = playerRepository.findAll();
+        int numberOfPlayers = numberOfPlayers();
         if (players.size() == 0) {
-            for (int iPlayer = 0; iPlayer < numberOfPlayers(); iPlayer++) {
+            for (int iPlayer = 0; iPlayer < numberOfPlayers; iPlayer++) {
                 Player player = new Player();
-                if ( currentMode().isSingle() && (! "".equals( singlePlayerName ) ) && (! "".equals( singlePlayerEmail ) )  ) {
-                    player.setName( singlePlayerName );
-                    player.setEmail( singlePlayerEmail );
+                if ( (numberOfPlayers == 1) && (! "".equals(playerName) ) && (! "".equals(playerEmail) )  ) {
+                    player.setName( playerName );
+                    player.setEmail( playerEmail );
                 }
                 else {
                     player.assignRandomName();
@@ -144,7 +139,7 @@ public class PlayerApplicationService {
      * for the game.
      * @param gameId
      */
-    public void joinPlayersInNewlyCreatedGame( UUID gameId ) {
+    public void registerPlayersForNewlyCreatedGame( UUID gameId ) {
         Game game = gameApplicationService.gameExternallyCreated( gameId );
         List<Player> players = playerRepository.findAll();
         for (Player player : players) registerOnePlayerForGame( player, game );
@@ -181,23 +176,36 @@ public class PlayerApplicationService {
 
 
 
-
     /**
      * Method to be called when the answer event after a game registration has been received
      */
     public void assignPlayerId( UUID registrationTransactionId, UUID playerId ) {
         logger.info( "Assign playerId from game registration" );
         if ( registrationTransactionId == null )
-            throw new PlayerRegistryException( "registrationTransactionId cannot be null!" );
-        if ( playerId == null )  throw new PlayerRegistryException( "PlayerId cannot be null!" );
+            throw new PlayerApplicationException( "registrationTransactionId cannot be null!" );
+        if ( playerId == null )  throw new PlayerApplicationException( "PlayerId cannot be null!" );
         List<Player> foundPlayers =
                 playerRepository.findByRegistrationTransactionId( registrationTransactionId );
         if ( foundPlayers.size() != 1 ) {
-            throw new PlayerRegistryException( "Found not exactly 1 game for player registration with " + registrationTransactionId
-                    + ", but " + foundPlayers.size() );
+            throw new PlayerApplicationException( "Found not exactly 1 player with transactionId"
+                    + registrationTransactionId + ", but " + foundPlayers.size() );
         }
         Player player = foundPlayers.get( 0 );
         player.setPlayerId( playerId );
         playerRepository.save( player );
+    }
+
+    /**
+     * @param playerId
+     * @param moneyAsInt
+     */
+    public void adjustBankAccount( UUID playerId, Integer moneyAsInt ) {
+        Moneten newMoney = Moneten.fromInteger( moneyAsInt );
+        List<Player> foundPlayers = playerRepository.findByPlayerId( playerId );
+        if ( foundPlayers.size() != 1 ) {
+            throw new PlayerApplicationException( "Found not exactly 1 player with playerId " + playerId
+                    + ", but " + foundPlayers.size() );
+        }
+        foundPlayers.get( 0 ).setMoneten( newMoney );
     }
 }
